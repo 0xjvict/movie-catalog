@@ -1,0 +1,86 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                USER_ID: ${UID}
+                GROUP_ID: ${GID}
+        container_name: movie_catalog_app
+        restart: unless-stopped
+        working_dir: /var/www
+        user: "${UID}:${GID}" # Define o usuário e grupo que o container usará para executar
+        volumes:
+            - .:/var/www
+        networks:
+            - movie_catalog_backend_network
+
+    nginx:
+        image: nginx:alpine
+        container_name: movie_catalog_nginx
+        restart: unless-stopped
+        ports:
+            - "8080:80"
+        volumes:
+            - .:/var/www
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - movie_catalog_backend_network
+        depends_on:
+            - app
+
+    mysql:
+        image: mysql:8.0
+        container_name: movie_catalog_mysql
+        restart: unless-stopped
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        volumes:
+            - mysql_data:/var/lib/mysql
+            - ./database/init:/docker-entrypoint-initdb.d
+        networks:
+            - movie_catalog_backend_network
+        command: --default-authentication-plugin=mysql_native_password
+
+    redis:
+        image: redis:7-alpine
+        container_name: movie_catalog_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - movie_catalog_backend_network
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        container_name: movie_catalog_phpmyadmin
+        restart: unless-stopped
+        ports:
+            - "8081:80"
+        environment:
+            PMA_HOST: mysql
+            PMA_USER: movie_catalog_user
+            PMA_PASSWORD: movie_catalog_password
+        networks:
+            - movie_catalog_backend_network
+        depends_on:
+            - mysql
+        profiles:
+            - dev
+
+volumes:
+    mysql_data:
+        driver: local
+    redis_data:
+        driver: local
+
+networks:
+    movie_catalog_backend_network:
+        driver: bridge
