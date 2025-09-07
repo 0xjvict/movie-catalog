@@ -52,10 +52,6 @@ final class TMDBMovieProvider implements MovieProvider
         return MovieMapper::mapToMovieVO($raw, $this->loadGenreMap());
     }
 
-    /**
-     * Carrega o mapa de gêneros do TMDB.
-     * @return array<int,string>
-     */
     private function loadGenreMap(): array
     {
         if ($this->genreMap === null) {

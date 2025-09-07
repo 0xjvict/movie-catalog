@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use Domain\Favorite\FavoriteRepository;
 use Domain\Movie\MovieProvider;
 use Illuminate\Support\ServiceProvider;
+use Infrastructure\Persistence\EloquentFavoriteRepository;
 use Infrastructure\TMDB\TMDBClient;
 use Infrastructure\TMDB\TMDBMovieProvider;
 
@@ -24,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             MovieProvider::class,
             TMDBMovieProvider::class
+        );
+        $this->app->bind(
+            FavoriteRepository::class,
+            EloquentFavoriteRepository::class
         );
     }
 

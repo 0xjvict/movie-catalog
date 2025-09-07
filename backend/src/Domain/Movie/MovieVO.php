@@ -31,7 +31,6 @@ final readonly class MovieVO
         public string  $backdropPath,
         public string  $releaseDate,
         public string  $originCountry,
-        /** @var Genre[] */
         public array   $genres,
         public int     $runtimeMinutes,
         public string  $tagline,
