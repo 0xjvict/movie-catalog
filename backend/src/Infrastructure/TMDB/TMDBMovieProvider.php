@@ -3,6 +3,7 @@
 namespace Infrastructure\TMDB;
 
 use Domain\Movie\MovieProvider;
+use Domain\Movie\MovieSearchItemDTO;
 use Domain\Movie\MovieVO;
 
 final class TMDBMovieProvider implements MovieProvider
@@ -23,29 +24,16 @@ final class TMDBMovieProvider implements MovieProvider
     }
 
     /**
-     * Carrega o mapa de gêneros do TMDB.
-     * @return array<int,string>
-     */
-    private function loadGenreMap(): array
-    {
-        if ($this->genreMap === null) {
-            $this->genreMap = $this->client->getGenresList();
-        }
-        return $this->genreMap;
-    }
-
-    /**
      * Busca filmes por título.
      *
      * @param string $title
      * @param int $page
-     * @return array|MovieVO[]
+     * @return array|MovieSearchItemDTO[]
      */
     public function searchByTitle(string $title, int $page = 1): array
     {
         $raw = $this->client->searchMovies($title, $page);
-        $genreMap = $this->loadGenreMap();
-        return MovieMapper::fromSearchResponse($raw, $genreMap);
+        return MovieMapper::mapSearchResponseToDTOList($raw);
     }
 
     /**
@@ -61,6 +49,18 @@ final class TMDBMovieProvider implements MovieProvider
             return null;
         }
 
-        return MovieMapper::fromApi($raw, $this->loadGenreMap());
+        return MovieMapper::mapToMovieVO($raw, $this->loadGenreMap());
+    }
+
+    /**
+     * Carrega o mapa de gêneros do TMDB.
+     * @return array<int,string>
+     */
+    private function loadGenreMap(): array
+    {
+        if ($this->genreMap === null) {
+            $this->genreMap = $this->client->getGenresList();
+        }
+        return $this->genreMap;
     }
 }

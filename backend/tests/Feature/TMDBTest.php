@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Application\Movie\FindMovieByIdUseCase;
 use Application\Movie\SearchMoviesUseCase;
+use Domain\Movie\MovieSearchItemDTO;
 use Domain\Movie\MovieVO;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -36,7 +37,7 @@ final class TMDBTest extends TestCase
         $this->assertIsArray($response);
         $this->assertNotEmpty($response);
         foreach ($response as $movie) {
-            $this->assertInstanceOf(MovieVO::class, $movie);
+            $this->assertInstanceOf(MovieSearchItemDTO::class, $movie);
         }
     }
 
@@ -48,10 +49,15 @@ final class TMDBTest extends TestCase
         $this->assertInstanceOf(MovieVO::class, $movie);
         $this->assertEquals($this->myFavoriteMovieId, $movie->id);
         $this->assertEquals('Matrix', $movie->title);
-        $this->assertNotEmpty($movie->overview);
         $this->assertNotEmpty($movie->posterPath);
         $this->assertNotEmpty($movie->backdropPath);
         $this->assertNotEmpty($movie->releaseDate);
+        $this->assertNotEmpty($movie->originCountry);
         $this->assertNotEmpty($movie->genres);
+        $this->assertGreaterThan(0, $movie->runtimeMinutes);
+        $this->assertNotEmpty($movie->tagline);
+        $this->assertNotEmpty($movie->overview);
+        $this->assertGreaterThanOrEqual(0, $movie->voteAverage);
+        $this->assertGreaterThanOrEqual(0, $movie->voteCount);
     }
 }

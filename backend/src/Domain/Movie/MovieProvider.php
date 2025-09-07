@@ -7,7 +7,7 @@ interface MovieProvider
     /**
      * @param string $title
      * @param int $page
-     * @return array
+     * @return MovieSearchItemDTO[]|array
      */
     public function searchByTitle(string $title, int $page = 1): array;
 

@@ -3,7 +3,7 @@
 namespace Application\Movie;
 
 use Domain\Movie\MovieProvider;
-use Domain\Movie\MovieVO;
+use Domain\Movie\MovieSearchItemDTO;
 
 final readonly class SearchMoviesUseCase
 {
@@ -14,7 +14,7 @@ final readonly class SearchMoviesUseCase
     }
 
     /**
-     * @return MovieVO[]
+     * @return MovieSearchItemDTO[]|array
      */
     public function execute(string $title, int $page = 1): array
     {
