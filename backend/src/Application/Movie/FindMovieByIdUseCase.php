@@ -13,7 +13,7 @@ final readonly class FindMovieByIdUseCase
     {
     }
 
-    public function execute(int $movieId): MovieVO
+    public function __invoke(int $movieId): ?MovieVO
     {
         return $this->movieProvider->findById($movieId);
     }

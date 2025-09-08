@@ -3,11 +3,10 @@
 namespace App\Providers;
 
 use Domain\Favorite\FavoriteRepository;
-use Domain\Movie\MovieProvider;
 use Illuminate\Support\ServiceProvider;
 use Infrastructure\Persistence\EloquentFavoriteRepository;
-use Infrastructure\TMDB\TMDBClient;
-use Infrastructure\TMDB\TMDBMovieProvider;
+use Infrastructure\Persistence\FavoriteMapper;
+use Infrastructure\TMDB\MovieMapper;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,21 +15,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(TMDBClient::class, function ($app) {
-            return new TMDBClient(
-                env('TMDB_BEARER_TOKEN'),
-                (int)env('TMDB_CACHE_TTL', 3600)
-            );
-        });
+        $this->app->singleton(FavoriteMapper::class, fn($app) => new FavoriteMapper(
+            $app->make(MovieMapper::class)
+        ));
 
-        $this->app->bind(
-            MovieProvider::class,
-            TMDBMovieProvider::class
-        );
-        $this->app->bind(
-            FavoriteRepository::class,
-            EloquentFavoriteRepository::class
-        );
+        $this->app->bind(FavoriteRepository::class, fn($app) => new EloquentFavoriteRepository(
+            $app->make(FavoriteMapper::class)
+        ));
     }
 
     /**

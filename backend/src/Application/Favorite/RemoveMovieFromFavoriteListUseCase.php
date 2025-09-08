@@ -16,11 +16,13 @@ final readonly class RemoveMovieFromFavoriteListUseCase
      * @param int $userId
      * @param int $tmdbId
      */
-    public function execute(int $userId, int $tmdbId): void
+    public function __invoke(int $userId, int $tmdbId): void
     {
         $favorite = $this->repository->findByUserAndMovie($userId, $tmdbId);
         if ($favorite) {
             $this->repository->remove($favorite);
+        } else {
+            throw new \DomainException("Filme não encontrado na lista de favoritos.");
         }
     }
 }

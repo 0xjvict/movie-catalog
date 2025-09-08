@@ -5,14 +5,18 @@ namespace Infrastructure\Persistence;
 use Domain\Favorite\Favorite as FavoriteAggregate;
 use Domain\Favorite\FavoriteRepository;
 
-final class EloquentFavoriteRepository implements FavoriteRepository
+final readonly class EloquentFavoriteRepository implements FavoriteRepository
 {
+    public function __construct(private FavoriteMapper $mapper)
+    {
+    }
+
     public function save(FavoriteAggregate $favorite): void
     {
-        $favoriteModel = FavoriteModel::query()->updateOrCreate(
-            ['tmdb_id' => $favorite->getMovie()->id, 'user_id' => $favorite->getUserId()],
-            FavoriteMapper::toPersistenceArray($favorite)
-        );
+        $favoriteModel = FavoriteModel::query()->updateOrCreate([
+            'tmdb_id' => $favorite->getMovie()->id,
+            'user_id' => $favorite->getUserId()
+        ], $this->mapper->toPersistenceArray($favorite));
 
         $genreIds = [];
         foreach ($favorite->getMovie()->getGenres() as $genre) {
@@ -28,13 +32,12 @@ final class EloquentFavoriteRepository implements FavoriteRepository
 
     public function remove(FavoriteAggregate $favorite): void
     {
-        $favoriteModel = FavoriteModel::query()->where('tmdb_id', $favorite->getMovie()->id)
+        $favoriteModel = FavoriteModel::query()
+            ->where('tmdb_id', $favorite->getMovie()->id)
             ->where('user_id', $favorite->getUserId())
             ->first();
 
-        if ($favoriteModel) {
-            $favoriteModel->delete();
-        }
+        $favoriteModel?->delete();
     }
 
     public function findByUser(int $userId): array
@@ -43,7 +46,7 @@ final class EloquentFavoriteRepository implements FavoriteRepository
             ->where('user_id', $userId)
             ->with('genres')
             ->get()
-            ->map(fn($model) => FavoriteMapper::fromModel($model))
+            ->map(fn($model) => $this->mapper->fromModel($model))
             ->toArray();
     }
 
@@ -58,7 +61,7 @@ final class EloquentFavoriteRepository implements FavoriteRepository
         }
 
         return $query->get()
-            ->map(fn($model) => FavoriteMapper::fromModel($model))
+            ->map(fn($model) => $this->mapper->fromModel($model))
             ->toArray();
     }
 
@@ -70,6 +73,14 @@ final class EloquentFavoriteRepository implements FavoriteRepository
             ->with('genres')
             ->first();
 
-        return $favoriteModel ? FavoriteMapper::fromModel($favoriteModel) : null;
+        return $favoriteModel ? $this->mapper->fromModel($favoriteModel) : null;
+    }
+
+    public function exists(int $userId, int $movieId): bool
+    {
+        return FavoriteModel::query()
+            ->where('user_id', $userId)
+            ->where('tmdb_id', $movieId)
+            ->exists();
     }
 }

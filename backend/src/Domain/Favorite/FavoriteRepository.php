@@ -35,4 +35,6 @@ interface FavoriteRepository
      * @return Favorite|null
      */
     public function findByUserAndMovie(int $userId, int $tmdbId): ?Favorite;
+
+    public function exists(int $userId, int $movieId): bool;
 }

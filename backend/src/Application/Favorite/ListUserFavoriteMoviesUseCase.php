@@ -7,21 +7,23 @@ use Domain\Favorite\FavoriteRepository;
 
 final readonly class ListUserFavoriteMoviesUseCase
 {
-    public function __construct(private FavoriteRepository $repository)
+    public function __construct(
+        private FavoriteRepository $repository
+    )
     {
     }
 
     /**
+     * Lista os filmes favoritos de um usuário, opcionalmente filtrando por gênero.
+     *
      * @param int $userId
      * @param int|null $genreId
-     * @return Favorite[]
+     * @return Favorite[]|array
      */
-    public function execute(int $userId, ?int $genreId = null): array
+    public function __invoke(int $userId, ?int $genreId = null): array
     {
-        if ($genreId === null) {
-            return $this->repository->findByUser($userId);
-        }
-
-        return $this->repository->findByUserAndGenre($userId, $genreId);
+        return $genreId === null
+            ? $this->repository->findByUser($userId)
+            : $this->repository->findByUserAndGenre($userId, $genreId);
     }
 }

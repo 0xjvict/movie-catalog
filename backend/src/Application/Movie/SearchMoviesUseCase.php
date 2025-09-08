@@ -16,7 +16,7 @@ final readonly class SearchMoviesUseCase
     /**
      * @return MovieSearchItemDTO[]|array
      */
-    public function execute(string $title, int $page = 1): array
+    public function __invoke(string $title, int $page = 1): array
     {
         return $this->movieProvider->searchByTitle($title, $page);
     }

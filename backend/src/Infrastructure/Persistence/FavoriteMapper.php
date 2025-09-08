@@ -2,22 +2,27 @@
 
 namespace Infrastructure\Persistence;
 
+use Application\Favorite\FavoriteMovieListDTO;
 use Domain\Favorite\Favorite as FavoriteAggregate;
 use Domain\Movie\Genre;
 use Infrastructure\TMDB\MovieMapper;
 
 /**
- * Responsável por mapear o agregado Favorite para persistência e vice-versa
+ * Responsável por mapear o agregado Favorite
  */
-final class FavoriteMapper
+final readonly class FavoriteMapper
 {
+    public function __construct(private MovieMapper $movieMapper)
+    {
+    }
+
     /**
      * Converte o agregado Favorite em array para persistência no banco
      *
      * @param FavoriteAggregate $favorite
      * @return array
      */
-    public static function toPersistenceArray(FavoriteAggregate $favorite): array
+    public function toPersistenceArray(FavoriteAggregate $favorite): array
     {
         $movie = $favorite->getMovie();
 
@@ -43,9 +48,8 @@ final class FavoriteMapper
      * @param FavoriteModel $model
      * @return FavoriteAggregate
      */
-    public static function fromModel(FavoriteModel $model): FavoriteAggregate
+    public function fromModel(FavoriteModel $model): FavoriteAggregate
     {
-        // Mapeia os gêneros do modelo Eloquent para objetos de domínio
         $genres = $model->genres
             ->map(fn($genreModel) => new Genre(
                 id: $genreModel->id,
@@ -53,7 +57,6 @@ final class FavoriteMapper
             ))
             ->toArray();
 
-        // Prepara os dados do filme para o MovieMapper
         $movieData = [
             'id' => $model->tmdb_id,
             'title' => $model->title,
@@ -69,10 +72,29 @@ final class FavoriteMapper
             'vote_count' => $model->vote_count,
         ];
 
-        // Cria o agregado Favorite com o MovieVO mapeado
         return new FavoriteAggregate(
             userId: $model->user_id,
-            movie: MovieMapper::mapToMovieVO($movieData)
+            movie: $this->movieMapper->mapToMovieVO($movieData)
+        );
+    }
+
+    /**
+     * Mapeia o agregado Favorite para o DTO usado na listagem de favoritos
+     *
+     * @param FavoriteAggregate $favorite
+     * @return FavoriteMovieListDTO
+     */
+    public function toListDTO(FavoriteAggregate $favorite): FavoriteMovieListDTO
+    {
+        $movie = $favorite->getMovie();
+
+        return new FavoriteMovieListDTO(
+            id: $movie->id,
+            title: $movie->title,
+            posterPath: $this->movieMapper->getImageUrl($movie->posterPath),
+            releaseDate: $movie->releaseDate,
+            genres: array_map(fn(Genre $genre) => ['id' => $genre->id, 'name' => $genre->name], $movie->genres),
+            voteAverage: $movie->voteAverage
         );
     }
 }
