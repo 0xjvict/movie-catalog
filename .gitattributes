@@ -1,0 +1,12 @@
+# Forçar scripts shell sempre em LF
+*.sh text eol=lf
+
+# Para código em geral (opcional)
+*.php text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.vue text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
