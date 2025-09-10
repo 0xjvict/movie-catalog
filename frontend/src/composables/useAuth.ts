@@ -1,7 +1,7 @@
 // src/composables/useAuth.ts
-import type { Ref } from 'vue'
-import { ref } from 'vue'
-import { apiFetch, baseURL } from '@/api/http'
+import type {Ref} from 'vue'
+import {ref} from 'vue'
+import {apiFetch, baseURL} from '@/api/http'
 
 export interface User {
     id: number
@@ -25,7 +25,6 @@ export interface RegisterData {
     password_confirmation: string
 }
 
-// Singleton pattern
 let authInstance: ReturnType<typeof createAuth> | null = null
 
 const createAuth = () => {

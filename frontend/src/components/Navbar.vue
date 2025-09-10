@@ -47,7 +47,6 @@ const handleLogout = async (): Promise<void> => {
 </script>
 
 <style scoped>
-/* Seus estilos permanecem os mesmos */
 .navbar {
   position: fixed;
   top: 0;

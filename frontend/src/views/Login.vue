@@ -54,7 +54,6 @@ import type { LoginData } from '@/composables/useAuth'
 const { login, loading, error } = useAuth()
 const router = useRouter()
 
-// Defina o formData corretamente
 const formData = reactive<LoginData>({
   email: '',
   password: '',
@@ -62,7 +61,6 @@ const formData = reactive<LoginData>({
 })
 
 const handleLogin = async (): Promise<void> => {
-  // Use formData em vez de credentials
   const success = await login(formData)
   if (success) {
     router.push('/')

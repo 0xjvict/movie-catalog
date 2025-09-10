@@ -10,7 +10,6 @@
 </template>
 
 <script setup lang="ts">
-// Não precisa de lógica especial
 </script>
 
 <style scoped>

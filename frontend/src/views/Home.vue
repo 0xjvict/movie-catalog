@@ -90,27 +90,23 @@ const { movies, loading, error, searchMovies } = useMovies()
 
 const trimmedQuery = computed(() => query.value.trim())
 
-// Função debounce para limitar as requisições
 let searchTimeout: number | null = null
 
 watch(trimmedQuery, (newValue) => {
   if (newValue) {
-    // Cancela o timeout anterior se existir
     if (searchTimeout !== null) {
       clearTimeout(searchTimeout)
     }
 
-    // Cria um novo timeout
     searchTimeout = setTimeout(() => {
       searchMovies(newValue)
       searchTimeout = null
-    }, 500) // Busca após 500ms de inatividade
+    }, 500)
   }
 })
 
 const handleSearch = (): void => {
   if (trimmedQuery.value) {
-    // Cancela o timeout se o usuário clicar manualmente
     if (searchTimeout !== null) {
       clearTimeout(searchTimeout)
       searchTimeout = null

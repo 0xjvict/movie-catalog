@@ -79,13 +79,12 @@ const formData = reactive<RegisterData>({
 const handleRegister = async (): Promise<void> => {
   const success = await register(formData)
   if (success) {
-    router.push('/') // redireciona após registro
+    router.push('/')
   }
 }
 </script>
 
 <style scoped>
-/* Mantendo os estilos do login */
 .login-container {
   display: flex;
   justify-content: center;

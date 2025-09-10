@@ -211,7 +211,7 @@ const isProcessingFavorite = ref(false)
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref('success')
-const hasCheckedFavorites = ref(false) // Nova flag para controle
+const hasCheckedFavorites = ref(false)
 
 const movieData = computed<MovieData>(() => movie.value || {
   id: 0, title: '', posterPath: '', backdropPath: '',
@@ -220,7 +220,6 @@ const movieData = computed<MovieData>(() => movie.value || {
   voteAverage: 0, voteCount: 0
 })
 
-// ✅ CORREÇÃO: Agora verifica se os favoritos já foram carregados
 const isFavorited = computed(() => {
   return hasCheckedFavorites.value && isFavoriteApi(movieData.value.id)
 })
@@ -251,12 +250,9 @@ const toggleFavorite = async () => {
     const result = await toggleFavoriteApi(movieData.value.id)
     console.log('📌 Resposta da API:', result)
 
-    // ✅ SEMPRE atualiza a lista após qualquer operação
     await getFavorites()
     console.log('📌 Estado local depois:', isFavorited.value)
 
-    // ✅ CORREÇÃO: Usa o ESTADO LOCAL ATUAL para determinar a mensagem
-    // Isso é mais confiável que a resposta da API
     if (isFavorited.value) {
       showNotification('Filme favoritado com sucesso! ❤️', 'success')
     } else {
@@ -276,28 +272,20 @@ const retryLoad = async () => {
   if (route.params.id) await getMovie(route.params.id)
 }
 
-// ✅ NOVO: Watcher para monitorar quando os favoritos são carregados
 watch(favoritesLoading, (newVal) => {
   if (!newVal) {
     hasCheckedFavorites.value = true
   }
 })
 
-// ✅ NOVO: Carregar favoritos ao montar o componente
 onMounted(async () => {
-  // Carrega os favoritos primeiro
   await getFavorites()
   hasCheckedFavorites.value = true
 
-  // Depois carrega o filme
   if (route.params.id) {
     await getMovie(route.params.id)
   }
 })
-
-// onMounted(() => {
-//   if (route.params.id) getMovie(route.params.id)
-// })
 </script>
 
 

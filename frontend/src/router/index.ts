@@ -48,7 +48,7 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true }
     },
     {
-        path: '/:pathMatch(.*)*', // Captura qualquer rota não definida
+        path: '/:pathMatch(.*)*',
         name: 'NotFound',
         component: NotFound
     }
@@ -59,7 +59,6 @@ const router = createRouter({
     routes
 })
 
-// Navigation guard para verificar autenticação
 router.beforeEach(async (to, from, next) => {
     const { checkAuth } = useAuth()
 

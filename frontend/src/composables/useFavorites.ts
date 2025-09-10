@@ -62,7 +62,7 @@ export const useFavorites = () => {
 
         try {
             const payload = {
-                movie_id: movieId // Correto: apenas o ID numérico
+                movie_id: movieId
             }
             console.log("Payload enviado:", JSON.stringify(payload))
 
@@ -130,7 +130,7 @@ export const useFavorites = () => {
             if (result.success) {
                 return { success: true }
             }
-            // ✅ Se falhou porque já está favoritado, então REMOVE
+
             else if (result.isAlreadyFavorited) {
                 console.log('📌 Removendo favorito existente...')
                 const removeResult = await removeFavorite(movieId)
@@ -152,7 +152,6 @@ export const useFavorites = () => {
     const isFavorite = (movieId: number): boolean => {
         if (!favorites.value || favorites.value.length === 0) return false
 
-        // ✅ Verifica de múltiplas formas para evitar dessincronização
         return favorites.value.some(fav =>
             fav.movieId === movieId ||
             fav.id === movieId ||
