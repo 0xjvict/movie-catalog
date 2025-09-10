@@ -5,13 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\PersonalAccessToken;
 
 final class AuthController extends Controller
 {
+    // Registro
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -26,37 +25,23 @@ final class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-<<<<<<< Updated upstream
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return response()->json([
-            'user' => $user,
-        ]);
-=======
+        // Criar token de acesso
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'user' => $user,
             'token' => $token,
         ], 201);
->>>>>>> Stashed changes
     }
 
+    // Login
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $data = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-<<<<<<< Updated upstream
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
-        }
-
-        $request->session()->regenerate();
-=======
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
@@ -66,36 +51,28 @@ final class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
->>>>>>> Stashed changes
 
         return response()->json([
-            'user' => Auth::user(),
+            'user' => $user,
+            'token' => $token,
         ]);
     }
 
+    // Logout
     public function logout(Request $request)
     {
-<<<<<<< Updated upstream
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return response()->json(['message' => 'Logged out']);
-=======
-        if ($request->user()->currentAccessToken() instanceof PersonalAccessToken) {
+        if ($request->user()->currentAccessToken()) {
             $request->user()->currentAccessToken()->delete();
-        } else {
-            auth()->guard('web')->logout();
         }
 
         return response()->json([
-            'message' => 'Logout realizado com sucesso'
+            'message' => 'Logout realizado com sucesso',
         ]);
     }
 
+    // Retorna dados do usuário autenticado
     public function user(Request $request)
     {
         return response()->json($request->user());
->>>>>>> Stashed changes
     }
 }
