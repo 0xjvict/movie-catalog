@@ -29,6 +29,11 @@
           <div class="backdrop-overlay"></div>
         </div>
 
+        <!-- Botão voltar -->
+        <button class="back-btn" @click="$router.back()">
+          ← Voltar
+        </button>
+
         <div class="header-content">
           <div class="movie-poster-container">
             <div class="poster-frame">
@@ -56,9 +61,7 @@
               <span v-if="movieData.originCountry" class="country">{{ movieData.originCountry }}</span>
             </div>
 
-            <div v-if="movieData.tagline" class="tagline">
-              "{{ movieData.tagline }}"
-            </div>
+            <div v-if="movieData.tagline" class="tagline">"{{ movieData.tagline }}"</div>
           </div>
         </div>
       </section>
@@ -86,7 +89,7 @@
                 </div>
               </div>
               <div class="rating-info">
-                <p class="rating-label">Nota dos usuários</p>
+                <p class="rating-label">⭐ Nota dos usuários</p>
                 <p class="vote-count">{{ movieData.voteCount.toLocaleString() }} avaliações</p>
               </div>
             </div>
@@ -94,15 +97,20 @@
             <div class="action-buttons">
               <button
                   @click="toggleFavorite"
-                  class="action-btn favorite-btn"
+                  class="action-btn"
                   :class="{ 'is-favorited': isFavorited }"
-                  :disabled="favoritesLoading"
+                  :disabled="favoritesLoading || isProcessingFavorite"
               >
                 <span class="btn-icon">
-                  {{ isFavorited ? '❤️' : '🤍' }}
+                  <svg v-if="isFavorited" xmlns="http://www.w3.org/2000/svg" fill="#ff6b6b" viewBox="0 0 24 24"
+                       width="20" height="20"><path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#333" viewBox="0 0 24 24"
+                       width="20" height="20"><path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 </span>
                 <span>{{ isFavorited ? 'Favoritado' : 'Favoritar' }}</span>
-                <span v-if="favoritesLoading" class="loading-dots"></span>
+                <span v-if="favoritesLoading || isProcessingFavorite" class="loading-dots"></span>
               </button>
             </div>
           </div>
@@ -138,13 +146,7 @@
             <div v-if="movieData.genres?.length" class="info-card">
               <h3>Gêneros</h3>
               <div class="genres-list">
-                <span
-                    v-for="genre in movieData.genres"
-                    :key="genre.id"
-                    class="genre-tag"
-                >
-                  {{ genre.name }}
-                </span>
+                <span v-for="genre in movieData.genres" :key="genre.id" class="genre-tag">{{ genre.name }}</span>
               </div>
             </div>
           </div>
@@ -161,193 +163,183 @@
   </div>
 
   <!-- Toast de notificação -->
-  <div v-if="showToast" class="toast" :class="toastType">
-    {{ toastMessage }}
-  </div>
+  <div v-if="showToast" class="toast" :class="toastType">{{ toastMessage }}</div>
 </template>
 
 <script setup lang="ts">
-import {computed, ref, onMounted} from 'vue'
+import {ref, computed, onMounted, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {useMovies} from '~/composables/useMovies.js'
-import {useFavorites} from '~/composables/useFavorites.js'
+import {useMovies} from '@/composables/useMovies.ts'
+import {useFavorites} from '@/composables/useFavorites.ts'
 
-// Types
 interface Genre {
-  id: number
+  id: number;
   name: string
 }
 
 interface MovieData {
-  id: number
-  title: string
-  posterPath: string
-  backdropPath: string
-  releaseDate: string
-  originCountry: string
-  genres: Genre[]
-  runtimeMinutes: number
-  tagline: string
-  overview: string
-  voteAverage: number
+  id: number;
+  title: string;
+  posterPath: string;
+  backdropPath: string;
+  releaseDate: string;
+  originCountry: string;
+  genres: Genre[];
+  runtimeMinutes: number;
+  tagline: string;
+  overview: string;
+  voteAverage: number;
   voteCount: number
 }
 
-// Composables
+interface MovieDetailsProps {
+  id?: string | number
+}
+
+const props = defineProps<MovieDetailsProps>()
+
 const {movie, loading, error, getMovie} = useMovies()
 const {
   favorites,
   loading: favoritesLoading,
   toggleFavorite: toggleFavoriteApi,
   isFavorite: isFavoriteApi,
-  getFavorites: getFavorites
+  getFavorites
 } = useFavorites()
 const route = useRoute()
-
-// Estado local para controle visual
 const isProcessingFavorite = ref(false)
-
-// Computed
-const movieData = computed<MovieData>(() => {
-  return movie.value || {
-    id: 0,
-    title: '',
-    posterPath: '',
-    backdropPath: '',
-    releaseDate: '',
-    originCountry: '',
-    genres: [],
-    runtimeMinutes: 0,
-    tagline: '',
-    overview: '',
-    voteAverage: 0,
-    voteCount: 0
-  }
-})
-
-const isFavorited = computed(() => {
-  return isFavoriteApi(movieData.value.id)
-})
-
-// Methods
-const getReleaseYear = (releaseDate: string): string => {
-  if (!releaseDate) return ''
-  return new Date(releaseDate).getFullYear().toString()
-}
-
-const getGenresText = (genres: Genre[]): string => {
-  if (!genres || genres.length === 0) return ''
-  return genres.map(genre => genre.name).join(' • ')
-}
-
-const formatDuration = (minutes: number): string => {
-  if (!minutes) return 'N/A'
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return `${hours}h ${mins}min`
-}
-
-const formatDate = (dateString: string): string => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
-
 const showToast = ref(false)
 const toastMessage = ref('')
-const toastType = ref('success') // 'success' ou 'error'
+const toastType = ref('success')
+const hasCheckedFavorites = ref(false) // Nova flag para controle
 
-const showNotification = (message, type = 'success') => {
+const movieData = computed<MovieData>(() => movie.value || {
+  id: 0, title: '', posterPath: '', backdropPath: '',
+  releaseDate: '', originCountry: '', genres: [],
+  runtimeMinutes: 0, tagline: '', overview: '',
+  voteAverage: 0, voteCount: 0
+})
+
+// ✅ CORREÇÃO: Agora verifica se os favoritos já foram carregados
+const isFavorited = computed(() => {
+  return hasCheckedFavorites.value && isFavoriteApi(movieData.value.id)
+})
+
+const getReleaseYear = (date: string) => date ? new Date(date).getFullYear().toString() : ''
+const getGenresText = (genres: Genre[]) => genres.map(g => g.name).join(' • ')
+const formatDuration = (m: number) => m ? `${Math.floor(m / 60)}h ${m % 60}min` : 'N/A'
+const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('pt-BR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}) : 'N/A'
+
+const showNotification = (message: string, type = 'success') => {
   toastMessage.value = message
   toastType.value = type
   showToast.value = true
-
-  setTimeout(() => {
-    showToast.value = false
-  }, 3000)
+  setTimeout(() => showToast.value = false, 5000)
 }
 
-const toggleFavorite = async (): Promise<void> => {
-  if (isProcessingFavorite.value) return
 
+const toggleFavorite = async () => {
+  if (isProcessingFavorite.value) return
   isProcessingFavorite.value = true
   try {
-    const result = await toggleFavoriteApi(movieData.value.id)
+    console.log('📌 Estado local antes:', isFavorited.value)
 
-    if (result.success) {
-      showNotification(result.message, 'success')
-      await getFavorites()
+    const result = await toggleFavoriteApi(movieData.value.id)
+    console.log('📌 Resposta da API:', result)
+
+    // ✅ SEMPRE atualiza a lista após qualquer operação
+    await getFavorites()
+    console.log('📌 Estado local depois:', isFavorited.value)
+
+    // ✅ CORREÇÃO: Usa o ESTADO LOCAL ATUAL para determinar a mensagem
+    // Isso é mais confiável que a resposta da API
+    if (isFavorited.value) {
+      showNotification('Filme favoritado com sucesso! ❤️', 'success')
     } else {
-      if (result.error.includes("já favoritado")) {
-        showNotification("Filme já está na sua lista de favoritos", 'info')
-      } else {
-        showNotification(result.error, 'error')
-      }
+      showNotification('Filme removido dos favoritos! 💔', 'success')
     }
-  } catch (err) {
-    showNotification("Erro inesperado. Tente novamente.", 'error')
-    console.error('Erro inesperado:', err)
+
+  } catch (error) {
+    console.error('❌ Erro no toggleFavorite:', error)
+    showNotification('Erro de conexão. Tente novamente.', 'error')
   } finally {
     isProcessingFavorite.value = false
   }
 }
 
-const handleImageError = (event: Event): void => {
-  const target = event.target as HTMLImageElement
-  target.src = '/placeholder-poster.jpg'
+const handleImageError = (e: Event) => (e.target as HTMLImageElement).src = '/placeholder-poster.jpg'
+const retryLoad = async () => {
+  if (route.params.id) await getMovie(route.params.id)
 }
 
-const retryLoad = async (): Promise<void> => {
-  const id = route.params.id
-  if (id) {
-    await getMovie(id)
+// ✅ NOVO: Watcher para monitorar quando os favoritos são carregados
+watch(favoritesLoading, (newVal) => {
+  if (!newVal) {
+    hasCheckedFavorites.value = true
+  }
+})
+
+// ✅ NOVO: Carregar favoritos ao montar o componente
+onMounted(async () => {
+  // Carrega os favoritos primeiro
+  await getFavorites()
+  hasCheckedFavorites.value = true
+
+  // Depois carrega o filme
+  if (route.params.id) {
+    await getMovie(route.params.id)
+  }
+})
+
+// onMounted(() => {
+//   if (route.params.id) getMovie(route.params.id)
+// })
+</script>
+
+
+<style scoped>
+.animate-heart {
+  animation: popHeart 0.4s ease forwards;
+}
+
+@keyframes popHeart {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
-// Lifecycle
-onMounted(() => {
-  const id = route.params.id
-  getMovie(id)
-})
-</script>
-
-<style scoped>
 .movie-detail-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
-/* Loading State */
-.loading-state {
+/* Loading, Error, No Movie */
+.loading-state, .error-state, .no-movie-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   gap: 2rem;
-}
-
-.loading-animation {
-  position: relative;
-  width: 100px;
-  height: 60px;
+  text-align: center;
+  padding: 2rem;
 }
 
 .film-strip {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(
-      90deg,
-      #333 0%,
-      #666 25%,
-      #333 50%,
-      #666 75%,
-      #333 100%
-  );
+  height: 60px;
+  background: linear-gradient(90deg, #333 0%, #666 25%, #333 50%, #666 75%, #333 100%);
   border-radius: 8px;
   animation: filmRoll 2s linear infinite;
 }
@@ -361,44 +353,23 @@ onMounted(() => {
   }
 }
 
-/* Error States */
-.error-state, .no-movie-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  text-align: center;
-  padding: 2rem;
-}
-
-.error-icon, .no-movie-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
 .retry-btn {
   margin-top: 1rem;
-  padding: 0.75rem 2rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: .75rem 2rem;
+  background: rgba(255, 255, 255, .2);
+  border: 2px solid rgba(255, 255, 255, .3);
   border-radius: 50px;
   color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all .3s ease;
 }
 
 .retry-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, .3);
   transform: translateY(-2px);
 }
 
-/* Movie Content */
-.movie-content {
-  position: relative;
-}
-
-/* Header Section */
+/* Header Backdrop */
 .movie-header {
   position: relative;
   height: 70vh;
@@ -420,7 +391,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(2px) brightness(0.4);
+  filter: blur(4px) brightness(0.5);
 }
 
 .backdrop-overlay {
@@ -429,11 +400,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-      45deg,
-      rgba(102, 126, 234, 0.8) 0%,
-      rgba(118, 75, 162, 0.6) 100%
-  );
+  background: linear-gradient(45deg, rgba(102, 126, 234, 0.7) 0%, rgba(118, 75, 162, 0.5) 100%);
 }
 
 .header-content {
@@ -448,10 +415,6 @@ onMounted(() => {
   align-items: end;
 }
 
-.movie-poster-container {
-  flex-shrink: 0;
-}
-
 .poster-frame {
   position: relative;
   width: 280px;
@@ -461,8 +424,8 @@ onMounted(() => {
   width: 100%;
   height: auto;
   border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-  transition: transform 0.4s ease;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, .4);
+  transition: transform .4s ease;
 }
 
 .poster-image:hover {
@@ -479,9 +442,10 @@ onMounted(() => {
   border-radius: 30px;
   z-index: -1;
   filter: blur(20px);
-  opacity: 0.5;
+  opacity: .5;
 }
 
+/* Movie Info */
 .movie-info {
   flex: 1;
   padding-bottom: 2rem;
@@ -494,15 +458,14 @@ onMounted(() => {
 .movie-title {
   font-size: 4rem;
   font-weight: 800;
-  margin: 0;
   line-height: 1.1;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, .5);
 }
 
 .release-year {
   font-size: 2rem;
   font-weight: 300;
-  opacity: 0.8;
+  opacity: .8;
   margin-left: 1rem;
 }
 
@@ -515,8 +478,8 @@ onMounted(() => {
 }
 
 .duration, .genres, .country {
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
+  padding: .5rem 1rem;
+  background: rgba(255, 255, 255, .2);
   border-radius: 25px;
   backdrop-filter: blur(10px);
 }
@@ -524,11 +487,11 @@ onMounted(() => {
 .tagline {
   font-size: 1.3rem;
   font-style: italic;
-  opacity: 0.9;
+  opacity: .9;
   font-weight: 300;
 }
 
-/* Details Section */
+/* Movie Details */
 .movie-details {
   background: white;
   color: #333;
@@ -544,7 +507,6 @@ onMounted(() => {
   padding: 4rem 2rem 2rem;
 }
 
-/* Rating and Actions */
 .rating-actions-section {
   display: flex;
   gap: 3rem;
@@ -560,7 +522,7 @@ onMounted(() => {
   color: white;
   padding: 1.5rem;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, .3);
 }
 
 .rating-visual {
@@ -577,16 +539,16 @@ onMounted(() => {
 
 .rating-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.3);
+  stroke: rgba(255, 255, 255, .3);
   stroke-width: 10;
 }
 
 .rating-progress {
   fill: none;
-  stroke: #ffffff;
+  stroke: #fff;
   stroke-width: 10;
   stroke-linecap: round;
-  transition: stroke-dasharray 0.6s ease;
+  transition: stroke-dasharray .6s ease;
 }
 
 .rating-text {
@@ -617,11 +579,12 @@ onMounted(() => {
 }
 
 .vote-count {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  margin: 0.5rem 0 0;
+  font-size: .9rem;
+  opacity: .9;
+  margin: .5rem 0 0;
 }
 
+/* Action Button */
 .action-buttons {
   display: flex;
   gap: 1rem;
@@ -631,25 +594,25 @@ onMounted(() => {
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: .5rem;
+  padding: .75rem 1.5rem;
   border: 2px solid #e2e8f0;
   border-radius: 50px;
   background: white;
   color: #333;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all .3s ease;
   font-weight: 500;
   position: relative;
 }
 
 .action-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
 }
 
 .action-btn:disabled {
-  opacity: 0.6;
+  opacity: .6;
   cursor: not-allowed;
 }
 
@@ -660,9 +623,11 @@ onMounted(() => {
 }
 
 .btn-icon {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
 }
 
+/* Loading Dots */
 .loading-dots {
   display: inline-block;
   width: 10px;
@@ -670,14 +635,13 @@ onMounted(() => {
   border-radius: 50%;
   background-color: currentColor;
   animation: loadingDots 1.4s infinite ease-in-out both;
+  position: relative;
 }
 
-.loading-dots::before,
-.loading-dots::after {
+.loading-dots::before, .loading-dots::after {
   content: '';
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -706,7 +670,7 @@ onMounted(() => {
   }
 }
 
-/* Synopsis */
+/* Synopsis & Info Cards */
 .synopsis-section {
   margin-bottom: 3rem;
 }
@@ -714,8 +678,7 @@ onMounted(() => {
 .section-title {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #1a202c;
+  margin-bottom: 1rem;
 }
 
 .synopsis-content {
@@ -727,121 +690,97 @@ onMounted(() => {
 
 .synopsis-text {
   font-size: 1.1rem;
-  line-height: 1.8;
-  margin: 0;
-  color: #4a5568;
+  line-height: 1.6;
+  color: #333;
 }
 
-/* Info Cards */
 .info-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
 }
 
 .info-card {
-  background: #f7fafc;
-  padding: 2rem;
+  flex: 1;
+  min-width: 250px;
+  background: #fff;
   border-radius: 20px;
-  border-top: 5px solid #764ba2;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .05);
 }
 
 .info-card h3 {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #1a202c;
 }
 
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: .8rem;
 }
 
 .info-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-}
-
-.info-label {
-  font-weight: 500;
-  color: #718096;
-}
-
-.info-value {
-  font-weight: 600;
-  color: #2d3748;
+  font-size: 1rem;
 }
 
 .genres-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: .5rem;
 }
 
 .genre-tag {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: #667eea;
   color: white;
-  border-radius: 25px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: .25rem .75rem;
+  border-radius: 50px;
+  font-size: .9rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-    padding: 1rem;
-  }
-
-  .movie-title {
-    font-size: 2.5rem;
-  }
-
-  .release-year {
-    font-size: 1.5rem;
-    display: block;
-    margin-left: 0;
-    margin-top: 0.5rem;
-  }
-
-  .rating-actions-section {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .details-container {
-    padding: 2rem 1rem;
-  }
-
-  .info-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* Toast */
 .toast {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  border-radius: 8px;
+  bottom: 2rem;
+  right: 2rem;
+  background: #333;
   color: white;
-  z-index: 1000;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .2);
+  opacity: 0.95;
+  z-index: 9999;
 }
 
 .toast.success {
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .toast.error {
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
 }
 
-.toast.info {
-  background-color: #2196F3;
+.back-btn {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.back-btn:hover {
+  transform: translateY(-2px);
 }
 </style>
