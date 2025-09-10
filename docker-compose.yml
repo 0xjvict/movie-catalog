@@ -1,0 +1,170 @@
+services:
+  # BACKEND APP Laravel
+  app:
+    build:
+      context: ./backend
+      dockerfile: docker/php/Dockerfile
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: movie_catalog_app
+    restart: unless-stopped
+    working_dir: /var/www
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./backend:/var/www
+      - php_vendor:/var/www/vendor
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - movie_catalog_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # NGINX para o Laravel
+  nginx:
+    image: nginx:alpine
+    container_name: movie_catalog_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www:ro  # Read-only para segurança
+      - ./backend/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - movie_catalog_network
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MYSQL
+  mysql:
+    image: mysql:8.0
+    container_name: movie_catalog_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./backend/.env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-movie_catalog_db}
+      MYSQL_USER: ${DB_USERNAME:-movie_catalog_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-movie_catalog_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-movie_catalog_root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - movie_catalog_network
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # REDIS
+  redis:
+    image: redis:7-alpine
+    container_name: movie_catalog_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - movie_catalog_network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # PHPMyAdmin (opcional para dev)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: movie_catalog_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USERNAME:-movie_catalog_user}
+      PMA_PASSWORD: ${DB_PASSWORD:-movie_catalog_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-movie_catalog_root_password}
+    networks:
+      - movie_catalog_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    profiles:
+      - dev
+
+  # FRONTEND Vue + Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development  # Assumindo multi-stage build
+    container_name: movie_catalog_frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules  # Named volume para node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8080/api  # URL externa para o browser
+      - VITE_API_URL_INTERNAL=http://nginx:80/api  # URL interna para SSR (se houver)
+      - VITE_APP_NAME=Movie Catalog
+      - VITE_APP_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Para hot-reload no Docker
+    networks:
+      - movie_catalog_network
+    depends_on:
+      - nginx
+    stdin_open: true  # Para interatividade no terminal
+    tty: true
+
+  # MAILHOG para desenvolvimento (captura emails)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: movie_catalog_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - movie_catalog_network
+    profiles:
+      - dev
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  php_vendor:
+    driver: local
+  frontend_node_modules:
+    driver: local
+
+networks:
+  movie_catalog_network:
+    driver: bridge
