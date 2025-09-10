@@ -1,7 +1,18 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
+<<<<<<< Updated upstream
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/logout', [AuthController::class, 'logout']);
+=======
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->json(['message' => 'CSRF cookie set']);
+});
+>>>>>>> Stashed changes
+
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json(['message' => 'Welcome to the API']);
 });
