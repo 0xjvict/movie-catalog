@@ -283,8 +283,8 @@ main() {
     setup_environment
 
     # Exportar UID/GID com valores padrão
-    export UID=${UID:-$(id -u)}
-    export GID=${GID:-$(id -g)}
+    export USER_ID=${UID:-$(id -u)}
+    export GROUP_ID=${GID:-$(id -g)}
 
     start_containers
     check_mysql_connection
