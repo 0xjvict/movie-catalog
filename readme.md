@@ -73,12 +73,12 @@ Siga estes passos para ter o projeto rodando em poucos minutos:
 
 2. **Torne o script executável (apenas na primeira vez):**
    ```bash
-   chmod +x setup.sh
+   chmod +x init.sh
    ```
 
 3. **Execute o script de automação:**
    ```bash
-   ./setup.sh
+   ./init.sh
    ```
 
 O script irá automaticamente:
@@ -247,7 +247,7 @@ chmod -R 755 backend/storage backend/bootstrap/cache
 **Container não inicia:**
 ```bash
 docker-compose down -v
-./setup.sh
+./init.sh
 ```
 
 **Problemas de banco de dados:**
