@@ -142,19 +142,6 @@ services:
     stdin_open: true  # Para interatividade no terminal
     tty: true
 
-  # MAILHOG para desenvolvimento (captura emails)
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: movie_catalog_mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
-    networks:
-      - movie_catalog_network
-    profiles:
-      - dev
-
 volumes:
   mysql_data:
     driver: local
