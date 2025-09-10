@@ -189,9 +189,7 @@ docker-compose exec app php artisan test
 
 ### Testes Manuais
 1. Acesse http://localhost:5173
-2. Use as credenciais de teste:
-    - **Email:** test@example.com
-    - **Senha:** password
+2. Registre um novo usuário
 3. Teste as funcionalidades:
     - Pesquisa de filmes
     - Adição/remoção de favoritos
@@ -254,7 +252,7 @@ docker-compose down -v
 
 **Problemas de banco de dados:**
 ```bash
-docker-compose exec app php artisan migrate:fresh --seed
+docker-compose exec app php artisan migrate:fresh --
 ```
 
 **Ver logs:**
@@ -284,9 +282,6 @@ docker-compose exec app bash
 
 # Executar migrações
 docker-compose exec app php artisan migrate
-
-# Executar seeds
-docker-compose exec app php artisan db:seed
 
 # Ver status dos containers
 docker-compose ps
