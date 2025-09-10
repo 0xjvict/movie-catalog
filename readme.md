@@ -58,7 +58,7 @@ REDIS_PASSWORD=null
 REDIS_PORT=6379
 
 # Configuração da API do TMDB
-TMDB_API_KEY=sua_chave_aqui
+TMDB_BEARER_TOKEN=sua_chave_aqui
 ```
 
 ### 3. Inicialização com script automático (recomendado) ✅
