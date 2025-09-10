@@ -80,15 +80,21 @@ Siga estes passos para ter o projeto rodando em poucos minutos:
    ```bash
    ./init.sh
    ```
-
-O script irá automaticamente:
-- Configurar o ambiente
-- Construir os containers Docker
-- Instalar dependências
-- Executar migrações do banco de dados
-- Inicializar a aplicação
-
-4. **Acesse a aplicação:**
+   
+4. **Configure o TMDB_BEARER_TOKEN no .env:**
+   ```bash
+   TMDB_BEARER_TOKEN
+   ```
+   
+5. **Limpe os cache**
+   ```bash
+   php artisan config:clear
+   php artisan cache:clear
+   composer dump-autoload
+   php artisan config:cache
+   ```
+   
+5. **Acesse a aplicação:**
     - Frontend: http://localhost:5173
     - Backend: http://localhost:8080
     - PHPMyAdmin: http://localhost:8081 (usuário: root, senha: movie_catalog_root_password)
