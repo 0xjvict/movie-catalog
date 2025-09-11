@@ -32,41 +32,15 @@ Docker
 
 Docker Compose
 
-2. Inicialização com script (recomendado) ✅
-
-Na raiz do projeto, execute:
-
-chmod +x ./init.sh
-./init.sh
-
-
-Esse comando irá:
-
-Criar o .env do backend baseado no .env.example
-
-Configurar credenciais de banco e Redis
-
-Subir containers (app, nginx, mysql, redis)
-
-Instalar dependências do backend (Composer)
-
-Rodar as migrations
-
-Validar conexões com MySQL e Redis
-
-Exibir as URLs do projeto
-
-3. Inicialização manual (alternativa) 🛠️
-
-Caso não queira rodar o init.sh, siga os passos manualmente:
+2. Inicialização 🛠️
 
 Configurar variáveis de ambiente
 
 cp backend/.env.example backend/.env
 
+Edite o .env e ajuste as variáveis, TMDB_BEARER_TOKEN é muito importante:
 
-Edite o .env e ajuste as variáveis:
-
+TMDB_BEARER_TOKEN=sua_chave_aqui
 DB_CONNECTION=mysql
 DB_HOST=mysql
 DB_PORT=3306
@@ -74,9 +48,6 @@ DB_DATABASE=movie_catalog_db
 DB_USERNAME=movie_catalog_user
 DB_PASSWORD=movie_catalog_password
 DB_ROOT_PASSWORD=movie_catalog_root_password
-REDIS_HOST=redis
-REDIS_PORT=6379
-APP_KEY=base64:$(openssl rand -base64 32)
 
 
 Subir containers
@@ -89,7 +60,7 @@ Instalar dependências do backend
 docker compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
 
 
-Gerar chave da aplicação (caso não esteja no .env)
+Gerar chave da aplicação
 
 docker compose exec app php artisan key:generate
 
@@ -99,16 +70,11 @@ Rodar migrações
 docker compose exec app php artisan migrate --force
 
 
-Verificar se MySQL e Redis estão acessíveis
+Verificar se MySQL está acessível
 
 MySQL:
 
 docker compose exec mysql mysqladmin ping -h localhost -uroot -pmovie_catalog_root_password
-
-
-Redis:
-
-docker compose exec redis redis-cli ping
 
 
 Acessar URLs
@@ -116,8 +82,6 @@ Acessar URLs
 🎬 Frontend (Vue.js): http://localhost:5173
 
 🔧 Backend (Laravel): http://localhost:8080
-
-🗄️ PHPMyAdmin (perfil dev): http://localhost:8081
 
 ⚠️ Credenciais MySQL
 

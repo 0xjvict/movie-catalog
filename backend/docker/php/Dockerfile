@@ -1,57 +1,49 @@
-FROM php:8.2-fpm
+############################################
+# Base Image
+############################################
+FROM serversideup/php:8.2-fpm-nginx AS base
 
-# Instalar dependências do sistema
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libzip-dev \
-    libicu-dev \
-    && rm -rf /var/lib/apt/lists/*
+############################################
+# Development Image
+############################################
+FROM base AS development
 
-# Configurar GD com suporte a JPEG e FreeType
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+# Switch to root so we can do root things
+USER root
 
-# Instalar extensões do PHP
-RUN docker-php-ext-install \
-    pdo_mysql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd \
-    intl \
-    zip
+# Install the necessary packages for our development environment
+RUN apt-get update \
+    && apt-get install nano -y \
+    && apt-get install vim -y \
+    && apt-get install zip -y \
+    && apt-get install unzip -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Instalar Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Install xdebug
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
 
-# Argumentos para user e group IDs
+# Save the build arguments as a variable
 ARG USER_ID
 ARG GROUP_ID
 
-# Criar grupo e usuário com base nos IDs passados
-# Usa --system para criar um usuário que não precisa de shell interativo
-# Usa o grupo www-data padrão, que o PHP já usa
-# Usamos -o para permitir IDs não únicos, caso o host já os tenha
-# Se o grupo www-data já existir, a flag --force evita erro
-RUN groupadd --force -g ${GROUP_ID} www-data && \
-    useradd -u ${USER_ID} -g www-data -ms /bin/bash movie_catalog_user
+# Use the build arguments to change the UID
+# and GID of www-data while also changing
+# the file permissions for NGINX
+RUN docker-php-serversideup-set-id www-data $USER_ID:$GROUP_ID && \
+    docker-php-serversideup-set-file-permissions --owner $USER_ID:$GROUP_ID --service nginx
 
-# Copiar arquivos da aplicação
-WORKDIR /var/www
+# Drop back to our unprivileged user
+USER www-data
 
-# Copiar os arquivos antes de trocar para o usuário
-COPY --chown=movie_catalog_user:www-data . .
+############################################
+# Production Image
+############################################
 
-# Trocar para o usuário para executar o processo principal
-USER movie_catalog_user
+# Since we're calling "base", production isn't
+# calling any of that permission stuff
+FROM base AS production
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# Copy our app files as www-data (33:33)
+COPY --chown=www-data:www-data . /var/www/html
