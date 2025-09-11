@@ -90,6 +90,8 @@ Siga estes passos para ter o projeto rodando em poucos minutos:
 
 4. **Subir containers:**
    ```bash
+   export UID=$(id -u);
+   export GID=$(id -g);
    docker compose up -d --build
    ```
 
