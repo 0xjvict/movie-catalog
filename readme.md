@@ -71,73 +71,51 @@ Siga estes passos para ter o projeto rodando em poucos minutos:
    cd movie-catalog
    ```
 
-2. **Torne o script executável (apenas na primeira vez):**
-   ```bash
-   chmod +x init.sh
-   ```
-
-3. **Execute o script de automação:**
-   ```bash
-   ./init.sh
-   ```
-   
-4. **Configure o TMDB_BEARER_TOKEN no .env:**
-   ```bash
-   TMDB_BEARER_TOKEN
-   ```
-   
-5. **Limpe os cache**
-   ```bash
-   php artisan config:clear
-   php artisan cache:clear
-   composer dump-autoload
-   php artisan config:cache
-   ```
-   
-5. **Acesse a aplicação:**
-    - Frontend: http://localhost:5173
-    - Backend: http://localhost:8080
-    - PHPMyAdmin: http://localhost:8081 (usuário: root, senha: movie_catalog_root_password)
-
-## ⚙️ Configuração Manual
-
-Caso prefira configurar manualmente:
-
-1. **Configure as variáveis de ambiente:**
+2. **Crie um arquivo de variáveis de ambiente:**
    ```bash
    cp backend/.env.example backend/.env
    ```
 
-2. **Edite o arquivo .env com suas configurações, especialmente:**
+3. **Edite o .env e ajuste as variáveis, TMDB_BEARER_TOKEN é muito importante:**
    ```env
-   TMDB_API_KEY=sua_chave_tmdb_aqui
+   TMDB_BEARER_TOKEN=sua_chave_aqui
    DB_CONNECTION=mysql
    DB_HOST=mysql
    DB_PORT=3306
    DB_DATABASE=movie_catalog_db
    DB_USERNAME=movie_catalog_user
    DB_PASSWORD=movie_catalog_password
+   DB_ROOT_PASSWORD=movie_catalog_root_password
    ```
 
-3. **Suba os containers:**
+4. **Subir containers:**
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 
-4. **Instale as dependências do Laravel:**
+5. **Instalar dependências do backend:**
    ```bash
-   docker-compose exec app composer install
+   docker compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
    ```
 
-5. **Gere a chave da aplicação:**
+6. **Gerar chave da aplicação:**
    ```bash
-   docker-compose exec app php artisan key:generate
+   docker compose exec app php artisan key:generate
    ```
 
-6. **Execute as migrações:**
+7. **Rodar migrações:**
    ```bash
-   docker-compose exec app php artisan migrate --force
+   docker compose exec app php artisan migrate --force
    ```
+
+8. **Verificar se MySQL está acessível:**
+   ```bash
+   docker compose exec mysql mysqladmin ping -h localhost -uroot -pmovie_catalog_root_password
+   ```
+
+9. **Acesse a aplicação:**
+   - Frontend: http://localhost:5173
+   - Backend: http://localhost:8080
 
 ## 📁 Estrutura do Projeto
 
@@ -190,7 +168,7 @@ A API RESTful oferece os seguintes endpoints:
 ### Testes Automatizados
 Execute os testes com o comando:
 ```bash
-docker-compose exec app php artisan test
+docker compose exec app php artisan test
 ```
 
 ### Testes Manuais
@@ -210,7 +188,7 @@ Para usar a API do The Movie Database:
 3. Solicite uma API key para desenvolvimento
 4. Adicione a chave no arquivo `backend/.env`:
    ```
-   TMDB_API_KEY=sua_chave_aqui
+   TMDB_BEARER_TOKEN=sua_chave_aqui
    ```
 5. Reinicie os containers se necessário
 
@@ -252,19 +230,24 @@ chmod -R 755 backend/storage backend/bootstrap/cache
 
 **Container não inicia:**
 ```bash
-docker-compose down -v
-./init.sh
+docker compose down -v
+docker compose up -d
 ```
 
 **Problemas de banco de dados:**
 ```bash
-docker-compose exec app php artisan migrate:fresh --
+docker compose exec app php artisan migrate:fresh --
 ```
 
 **Ver logs:**
 ```bash
-docker-compose logs app
-docker-compose logs mysql
+docker compose logs app
+docker compose logs mysql
+```
+
+**Verificar conectividade do MySQL:**
+```bash
+docker compose exec mysql mysqladmin ping -h localhost -uroot -pmovie_catalog_root_password
 ```
 
 ## 💻 Desenvolvimento
@@ -278,25 +261,26 @@ docker-compose logs mysql
 - Senha: movie_catalog_password
 - Root: movie_catalog_root_password
 
-**Redis:** localhost:6379
-
 ### Comandos Úteis
 
 ```bash
 # Acessar container do app
-docker-compose exec app bash
+docker compose exec app bash
 
 # Executar migrações
-docker-compose exec app php artisan migrate
+docker compose exec app php artisan migrate
 
 # Ver status dos containers
-docker-compose ps
+docker compose ps
 
 # Parar containers
-docker-compose down
+docker compose down
 
 # Ver logs em tempo real
-docker-compose logs -f app
+docker compose logs -f app
+
+# Verificar status do MySQL
+docker compose exec mysql mysqladmin ping -h localhost -uroot -pmovie_catalog_root_password
 ```
 
 ## 📄 Licença
